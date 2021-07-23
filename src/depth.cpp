@@ -53,8 +53,8 @@ void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 		branch_pos_x = msg->bounding_boxes[i].xmin+(msg->bounding_boxes[i].xmax-msg->bounding_boxes[i].xmin)/2;
 		branch_pos_y = msg->bounding_boxes[i].ymin+(msg->bounding_boxes[i].ymax-msg->bounding_boxes[i].ymin)/2;
 
-		rel_branch_y = branch_pos_y / msg->width;
-		rel_branch_x = branch_pos_x / msg->height;
+		rel_branch_y = branch_pos_y / 416;
+		rel_branch_x = branch_pos_x / 416;
 
 		//cam_frame_width = msg->width;
 		//cam_frame_height = msg->height;
@@ -65,40 +65,61 @@ void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 	}
 }
 
-void callback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)
-{
-	// Converts raw pointcloud to PCL; this gives access the raw coordinates in the pointcloud
+// void callback(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input)
+// {
+// 	// Converts raw pointcloud to PCL; this gives access the raw coordinates in the pointcloud
 
-	pcl::PCLPointCloud2 pcl_pc2;
-	pcl_conversions::toPCL(*input,pcl_pc2);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::fromPCLPointCloud2(pcl_pc2, *temp_cloud);
-	temp_points.erase(temp_points.begin(), temp_points.end());
-
-
-	// Trying to relate the centre of bounding box to centre of point cloud to get coordinates of branch
-	// (This is where the problem is I believe)
-
-	depth_frame_width = input->width;
-	depth_frame_height = input->height;
-
-	int x = round(rel_branch_x);
-	int y = round(rel_branch_y);
-	int width = temp_cloud->width;
-
-	branch_pos_z = temp_cloud->points[width*y + x].z;
+// 	pcl::PCLPointCloud2 pcl_pc2;
+// 	pcl_conversions::toPCL(*input,pcl_pc2);
+// 	pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+// 	pcl::fromPCLPointCloud2(pcl_pc2, *temp_cloud);
+// 	temp_points.erase(temp_points.begin(), temp_points.end());
 
 
-	for(int i=0; i<temp_cloud->points.size(); i++)
-	{		
-		// Filters out NaN
-		if(isnan(temp_cloud->points[i].z)==false && isnan(temp_cloud->points[i].y)==false && isnan(temp_cloud->points[i].x)==false)
-		{
-			temp = {temp_cloud->points[i].x, temp_cloud->points[i].y, temp_cloud->points[i].z};
-			temp_points.push_back(temp);
-		}
-	}
+// 	// Trying to relate the centre of bounding box to centre of point cloud to get coordinates of branch
+// 	// (This is where the problem is I believe)
+
+// 	depth_frame_width = input->width;
+// 	depth_frame_height = input->height;
+
+// 	int x = round(rel_branch_x);
+// 	int y = round(rel_branch_y);
+// 	int width = temp_cloud->width;
+
+// 	branch_pos_z = temp_cloud->points[width*y + x].z;
+
+
+// 	for(int i=0; i<temp_cloud->points.size(); i++)
+// 	{		
+// 		// Filters out NaN
+// 		if(isnan(temp_cloud->points[i].z)==false && isnan(temp_cloud->points[i].y)==false && isnan(temp_cloud->points[i].x)==false)
+// 		{
+// 			temp = {temp_cloud->points[i].x, temp_cloud->points[i].y, temp_cloud->points[i].z};
+// 			temp_points.push_back(temp);
+// 		}
+// 	}
+// }
+
+
+void callback(const sensor_msgs::PointCloud2ConstPtr & cloud) {
+  pcl::PointCloud<pcl::PointXYZ> depth;
+  pcl::fromROSMsg( *cloud, depth);
+  int x = 0, y = 0; // set x and y
+  pcl::PointXYZ p1 = depth.at(branch_pos_x, branch_pos_y);
+  cout << "bounding box x pos: " << branch_pos_x << endl;
+	cout << "bounding box y pos: " << branch_pos_y << endl;
+  cout << "depth at this point : " << p1 << endl;
+  
+
 }
+
+
+
+
+
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -146,22 +167,22 @@ int main(int argc, char** argv)
 			// Print points
 			int count = 0;
 			vector<char> branch_label = {'x', 'y', 'z'};
-			if(temp_points.size()-3 < j < temp_points.size()+3)
-			{
-				for(vector<double>::const_iterator i=temp_points[j].begin(); i!=temp_points[j].end(); ++i)
-				{	
-					// check count is correct
+			// if(temp_points.size()-3 < j < temp_points.size()+3)
+			// {
+			// 	// for(vector<double>::const_iterator i=temp_points[j].begin(); i!=temp_points[j].end(); ++i)
+			// 	// {	
+			// 	// 	// check count is correct
 
-					if(count==0){
-						cout << " branch coords" << endl;
-					}
-					cout <<  branch_label[count] << endl;
-					count++;
-					cout << " " << *i << endl;
-				}
-				cout << "bounding box x pos: " << rel_branch_x << endl;
-				cout << "bounding box y pos: " << rel_branch_y << endl;
-			}
+			// 	// 	if(count==0){
+			// 	// 		cout << " branch coords" << endl;
+			// 	// 	}
+			// 	// 	cout <<  branch_label[count] << endl;
+			// 	// 	count++;
+			// 	// 	cout << " " << *i << endl;
+			// 	// }
+			// 	cout << "bounding box x pos: " << rel_branch_x << endl;
+			// 	cout << "bounding box y pos: " << rel_branch_y << endl;
+			// }
 			geometry_msgs::Point p;
 			p.x = temp_points[j][0];
 			p.y = temp_points[j][1];
