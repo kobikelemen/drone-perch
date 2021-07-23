@@ -4,7 +4,7 @@
 
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <sensor_msgs/PointCloud2.h>
-
+#include <sensor_msgs/Image.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/PCLPointCloud2.h>
@@ -53,8 +53,8 @@ void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 		branch_pos_x = msg->bounding_boxes[i].xmin+(msg->bounding_boxes[i].xmax-msg->bounding_boxes[i].xmin)/2;
 		branch_pos_y = msg->bounding_boxes[i].ymin+(msg->bounding_boxes[i].ymax-msg->bounding_boxes[i].ymin)/2;
 
-		rel_branch_y = branch_pos_y / 416;
-		rel_branch_x = branch_pos_x / 416;
+		rel_branch_y = branch_pos_y / msg->width;
+		rel_branch_x = branch_pos_x / msg->height;
 
 		//cam_frame_width = msg->width;
 		//cam_frame_height = msg->height;
