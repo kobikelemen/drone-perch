@@ -1,7 +1,7 @@
 
 
 #include <pcl/point_cloud.h>
-
+#include <gnc_functions.hpp>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
@@ -41,6 +41,8 @@ double rel_branch_y;
 vector<double> branch_coords;
 
 
+// x coords are range(0,2,100), y coords >>
+vector<double> test_trajectory = {0.0, -0.02, -0.042, -0.063, -0.086, -0.109, -0.133, -0.157, -0.182, -0.207, -0.232, -0.258, -0.284, -0.31, -0.336, -0.363, -0.39, -0.416, -0.443, -0.47, -0.496, -0.522, -0.548, -0.574, -0.6, -0.625, -0.65, -0.674, -0.698, -0.721, -0.744, -0.766, -0.787, -0.808, -0.828, -0.847, -0.865, -0.882, -0.899, -0.914, -0.928, -0.941, -0.953, -0.964, -0.973, -0.981, -0.988, -0.993, -0.997, -0.999, -1.0, -0.999, -0.997, -0.993, -0.987, -0.979, -0.969, -0.958, -0.945, -0.929, -0.912, -0.893, -0.871, -0.847, -0.821, -0.793, -0.762, -0.729, -0.694, -0.656, -0.616, -0.573, -0.528, -0.479, -0.429, -0.375, -0.319, -0.259, -0.197, -0.132, -0.064, 0.007, 0.081, 0.159, 0.239, 0.323, 0.41, 0.5, 0.594, 0.691, 0.792, 0.896, 1.004, 1, 1, 1, 1, 1, 1, 1}; // 1.115, 1.23, 1.349, 1.471, 1.598, 1.728, 1.862}
 
 void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 {	
@@ -100,6 +102,20 @@ void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 // 	}
 // }
 
+void perform_trajectory(vector<double> trajectory=test_trajectory)
+{	
+	
+	for(int i=0; i<trajectory.size(); i++)
+	{
+		if(i>0)
+		{
+			cout << " inside perform_trajectory ";
+			float y_diff = trajectory[i] - trajectory[i-1];
+			set_destination(2/100, 0, -y_diff, 0);
+		}
+	}
+}
+
 
 void callback(const sensor_msgs::PointCloud2ConstPtr & cloud) {
   pcl::PointCloud<pcl::PointXYZ> depth;
@@ -109,15 +125,25 @@ void callback(const sensor_msgs::PointCloud2ConstPtr & cloud) {
   cout << "bounding box x pos: " << branch_pos_x << endl;
 	cout << "bounding box y pos: " << branch_pos_y << endl;
   cout << "depth at this point : " << p1 << endl;
-  
+  //cout << " p1 " << endl << p1.x << " " << p1.y << " " << p1.z << endl;
+  branch_coords = {p1.x, p1.y, p1.z};
 
+
+  if(p1.y>-0.2 && p1.y<0.2)
+		{
+
+			if(p1.z>1.75 && p1.z<2.25)
+			{
+				cout <<" its good " << endl;
+				initialize_local_frame();
+				perform_trajectory();
+			}
+
+		}
+
+
+  //temp_points.push_back(p1);
 }
-
-
-
-
-
-
 
 
 
@@ -125,7 +151,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "depth");
   ros::NodeHandle nh;
-
+  init_publisher_subscriber(nh);
   // Recieves point cloud from kinect and bounding box of branch 
 
 	ros::Subscriber sub = nh.subscribe("/camera/depth/points",10, callback);
@@ -198,6 +224,8 @@ int main(int argc, char** argv)
 		// ROS_INFO(" %f", branch_pos_z);
 
 		ros::spinOnce();
+
+
 		r.sleep();
 		f += 0.04;
 	}
