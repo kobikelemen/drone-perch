@@ -1,150 +1,205 @@
+
+
+
+
+
+
+
 #include <gnc_functions.hpp>
-#include <math.h>
+#include <mavros_msgs/CommandTOL.h>
+#include <mavros_msgs/CommandLong.h>
+#include <mavros_msgs/State.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Vector3.h>
 #include <cmath>
+#include <math.h>
+#include <ros/ros.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/String.h>
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/PositionTarget.h>
+#include <unistd.h>
+#include <vector>
+#include <ros/duration.h>
+#include <iostream>
+#include <string>
 
 
 using namespace std;
-vector<float> trajectory = {0.0, -0.232, -0.496, -0.744, -0.928, -1.0, -0.912, -0.616, -0.064, 0.792};
-//vector<float> trajectory = {0.66, 1.32, 2};
+vector<float> delta_z = {-0.232, -0.496, -0.744, -0.928, -1.0, -0.912, -0.616, -0.064, 0.792, 1};
+vector<geometry_msgs::Point> trajectory;
+float qw, qx, qy, qz;
 
-// void perform_trajectory(vector<float> trajectory=test_trajectory)
-// {	
-// 	int i=1;
-// 	gnc_api_waypoint nextWaypoint;
-// 	nextWaypoint.x = 0;
-// 	nextWaypoint.y = 0.2;
-// 	nextWaypoint.z = trajectory[0]+1;
-// 	nextWaypoint.psi = 0;
+ros::Publisher local_attitude_pub;
+ros::Publisher thrust_pub;
 
-// 	set_destination(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z, nextWaypoint.psi);
-
-// 	cout << " inside perform_trajectory " << endl;
-// 	while(i<trajectory.size())
-// 	{	
-// 		cout << " inside while loop" << endl;
-// 			//cout << " inside perform_trajectory ";
-// 			//float y_diff = trajectory[i] - trajectory[i-1];
-
-// 		if (check_waypoint_reached(0.1) == 1)
-// 		{	
-// 			cout << " inside check_waypoint_reached " << endl;
-// 			set_destination(0, 0.2, trajectory[i]+1, 0);
-// 			i++;
-// 			//cout << " inside check_waypoint_reached " << endl;
-// 		}
-// 		rate.sleep()
-	
-// 	}
-// }
-
-// PRETTY SURE TRAJECTORY POINTS ARE TOO CLOSE TOGETHER FOR TOLERANCE <<<<<<
-
-
-float distance(geometry_msgs::Point vec)
+float distance(geometry_msgs::Twist vec)
 {
-	return sqrt(pow(vec.x,2) + pow(vec.y,2) + pow(vec.z,2));
+	return sqrt(pow(vec.linear.x,2) + pow(vec.linear.y,2) + pow(vec.linear.z,2));
 }
 
-vector<float> euler2quat(vector<float> euler)
+geometry_msgs::Quaternion euler2quat(vector<float> euler)
 {	
 
 	// MAKE SURE EULER ANGLES ARE RADIANS <<< !!!!!!!
 
-	float w = cos(euler[1]/2)*cos(euler[0]/2)*cos(euler[2]/2) - sin(euler[1]/2)*sin(euler[0]/2)*sin(euler[2]/2);
-	float x = sin(euler[1]/2)*sin(euler[0]/2)*cos(euler[2]/2) + cos(euler[1]/2)*cos(euler[0]/2)*sin(euler[2]/2);
-	float y = sin(euler[1]/2)*cos(euler[0]/2)*cos(euler[2]/2) + cos(euler[1]/2)*sin(euler[0]/2)*sin(euler[2]/2);
-	float z = cos(euler[1]/2)*sin(euler[0]/2)*cos(euler[]2/2) - sin(euler[1]/2)*cos(euler[0]/2)*sin(euler[2]/2);
-	return {w, x, y, z};
+	geometry_msgs::Quaternion q;
+	q.w = cos(euler[1]/2)*cos(euler[0]/2)*cos(euler[2]/2) - sin(euler[1]/2)*sin(euler[0]/2)*sin(euler[2]/2);
+	q.x = sin(euler[1]/2)*sin(euler[0]/2)*cos(euler[2]/2) + cos(euler[1]/2)*cos(euler[0]/2)*sin(euler[2]/2);
+	q.y = sin(euler[1]/2)*cos(euler[0]/2)*cos(euler[2]/2) + cos(euler[1]/2)*sin(euler[0]/2)*sin(euler[2]/2);
+	q.z = cos(euler[1]/2)*sin(euler[0]/2)*cos(euler[2]/2) - sin(euler[1]/2)*cos(euler[0]/2)*sin(euler[2]/2);
+	return q;
 }
+
+
+// void pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
+// {
+//   current_pose_g = *msg;
+//   qw = current_pose_g.pose.pose.orientation.w;
+//   qx = current_pose_g.pose.pose.orientation.x;
+//   qy = current_pose_g.pose.pose.orientation.y;
+//   qz = current_pose_g.pose.pose.orientation.z;
+// }
+
+
+geometry_msgs::Quaternion get_required_angles(geometry_msgs::Point diff)
+{	
+
+	// Idea of this is angle of desired point needed, not just of drone
+
+	float magnitude = sqrt(pow(diff.x, 2) + pow(diff.y, 2) + pow(diff.z, 2));
+	float x_angle = acos(diff.x / magnitude);
+	float y_angle = acos(diff.y / magnitude);
+	float z_angle = acos(diff.z / magnitude);
+
+	vector<float> euler = {x_angle, y_angle, z_angle};
+	geometry_msgs::Quaternion q = euler2quat(euler);
+
+	return q;
+
+}
+
+
 
 
 int main(int argc, char** argv)
 {
+	std::string ros_namespace;
 	ros::init(argc, argv, "test_trajectory");
 	ros::NodeHandle n;
 	init_publisher_subscriber(n);
+	//local_attitude_pub = n.advertise<geometry_msgs::PoseStamped>((ros_namespace + "/mavros/setpoint_attitude/attitude").c_str(), 10);
+	//thrust_pub = n.advertise<mavros_msgs::Thrust>((ros_namespace + "/mavros/setpoint_attitude/thrust").c_str(), 10);
+	ros::Publisher glob_vel_pub = n.advertise<geometry_msgs::Twist>((ros_namespace + "/mavros/setpoint_velocity/cmd_vel_unstamped").c_str(), 10);
 
-
+	//currentPos = n.subscribe<nav_msgs::Odometry>((ros_namespace + "/mavros/global_position/local").c_str(), 10, pose_cb);
+	
 	wait4connect();
 	wait4start();
 	
 
 	initialize_local_frame();
-	set_speed(20);
+	set_speed(2);
 	takeoff(2);
-	ros::Rate rate(2.0);
+	ros::Rate rate(10.0);
 
 	float y_ = 0.2;
 
+	geometry_msgs::Point current_location = get_current_location();
 
-	vector<gnc_api_waypoint> waypointlist;
-	gnc_api_waypoint nextWaypoint;
-	for(int i=0; i<trajectory.size(); i++)
+	while (!(current_location.z>1.9 && current_location.z<2.1) )
 	{
-		nextWaypoint.x = 0;
-		nextWaypoint.y = y_;
-		nextWaypoint.z = trajectory[i]+2.0;
-		nextWaypoint.psi = 0;
-		y_ += 0.2;
-		waypointlist.push_back(nextWaypoint);
-
+		rate.sleep();
+		ros::spinOnce();
+		current_location = get_current_location();
 	}
 
 
+	for(int i=0; i<delta_z.size(); i++)
+	{
 
+		geometry_msgs::Point p;
+		p.x = current_location.x;
+		p.y = current_location.y + 0.2*(i+1);
+		p.z = current_location.z + delta_z[i];
+
+		trajectory.push_back(p);
+	}
 
 	int counter = 0;
 
+
+	current_location = get_current_location();
+	geometry_msgs::Twist diff;
 	while(ros::ok())
 	{	
+		
 		ros::spinOnce();
+		current_location = get_current_location();
+		
+		//if (counter == 0)
+		//{
+		diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
+		diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
+		diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
+		glob_vel_pub.publish(diff);
+		//}
+		//current_location = get_current_location();
+		//geometry_msgs::Quaternion required_q_angles = get_required_angles(diff);
+
+		//local_attitude_pub.publish(required_q_angles);
+
+
+		if (distance(diff) < 0.1 || counter == 0)
+		{	
+			//cout << " in <0.05" << endl;
+
+			if (counter < trajectory.size())
+			{	
+				//cout << " in counter < waypointlist.size() " << endl;
+				
+
+
+				counter++;
+				ros::spinOnce();
+				current_location = get_current_location();
+				// diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
+				// diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
+				// diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
+				// glob_vel_pub.publish(diff);
+
+				cout << " current trajectory (x,y,z): " << trajectory[counter].x << " " << trajectory[counter].y << " " << trajectory[counter].z << endl;
+		
+				cout << " current location (x,y,z): " << current_location.x << " " << current_location.y << " " << current_location.z << endl;
+				cout << " diff (x,y,z) " << diff.linear.x << " " << diff.linear.y << " " << diff.linear.z << " " << endl;
+
+			}			
+		}
+
+
+		ros::spinOnce();
+		
+		current_location = get_current_location();
+		if (current_location.z > (trajectory.back().z-0.1))
+		{
+			cout << " trajectory[-1]-0.1: " << trajectory.back().z-0.1 << endl;
+			geometry_msgs::Twist vel;
+			vel.linear.x = 0;
+			vel.linear.y = 0;
+			vel.linear.z = 0;
+			glob_vel_pub.publish(vel);
+			break;
+		}
+
 		rate.sleep();
 
-
-		// if (check_waypoint_reached(0.1)==1)
-		// {	
-		// 	set_destination(0,2,2,0);
-		// }
-		// if (count==0)
-		// {
-			
-		// 	nextWaypoint.x = 0;
-		// 	nextWaypoint.y = y;
-		// 	nextWaypoint.z = trajectory[0]+1.0;
-		// 	nextWaypoint.psi = 0;
-
-		// 	set_destination(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z, nextWaypoint.psi);
-		// }
-
-
-		//if (check_waypoint_reached(0.05)==1)
-
-		geometry_msgs::Point location;
-		location = get_current_location();
-
-		geometry_msgs::Point diff;
-		diff.x = location.x - waypointlist[counter].x;
-		diff.y = location.y - waypointlist[counter].y;
-		diff.z = location.z - waypointlist[counter].z;
-
-		cout << " distance : " << distance(diff) << endl;
-
-		// THINK TO DO WITH NOT USING check_distance() FUNCTINO 
-
-		if (distance(diff) < 0.4)
-		{	
-			cout << " in 0.1 < dis < 0.2" << endl;
-
-			if (counter < waypointlist.size())
-			{	
-				cout << " in counter < waypointlist.size() " << endl;
-				counter++;
-				set_destination(waypointlist[counter].x, waypointlist[counter].y, waypointlist[counter].z, waypointlist[counter].psi);
-				
-			}			
-		}	
 	}
-		
-	return 0;	
 
+	return 0;	
 }
+
+

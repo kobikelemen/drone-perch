@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "depth");
   ros::NodeHandle nh;
-  init_publisher_subscriber(nh);
+  //init_publisher_subscriber(nh);
   // Recieves point cloud from kinect and bounding box of branch 
 
 	ros::Subscriber sub = nh.subscribe("/camera/depth/points",10, callback);
