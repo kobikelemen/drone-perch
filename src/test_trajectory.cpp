@@ -44,7 +44,6 @@ float distance(geometry_msgs::Twist vec)
 
 geometry_msgs::Quaternion euler2quat(vector<float> euler)
 {	
-
 	// MAKE SURE EULER ANGLES ARE RADIANS <<< !!!!!!!
 
 	geometry_msgs::Quaternion q;
@@ -141,36 +140,31 @@ int main(int argc, char** argv)
 		ros::spinOnce();
 		current_location = get_current_location();
 		
-		//if (counter == 0)
-		//{
 		diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
 		diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
 		diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
-		glob_vel_pub.publish(diff);
-		//}
-		//current_location = get_current_location();
-		//geometry_msgs::Quaternion required_q_angles = get_required_angles(diff);
-
-		//local_attitude_pub.publish(required_q_angles);
 
 
-		if (distance(diff) < 0.1 || counter == 0)
+		if (counter == 0)
+		{
+			glob_vel_pub.publish(diff);
+		}
+
+		if (distance(diff) < 0.2 || counter == 0)
 		{	
 			//cout << " in <0.05" << endl;
 
 			if (counter < trajectory.size())
 			{	
-				//cout << " in counter < waypointlist.size() " << endl;
 				
-
 
 				counter++;
 				ros::spinOnce();
 				current_location = get_current_location();
-				// diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
-				// diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
-				// diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
-				// glob_vel_pub.publish(diff);
+				diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
+				diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
+				diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
+				glob_vel_pub.publish(diff);
 
 				cout << " current trajectory (x,y,z): " << trajectory[counter].x << " " << trajectory[counter].y << " " << trajectory[counter].z << endl;
 		
