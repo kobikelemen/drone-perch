@@ -30,7 +30,9 @@
 
 
 using namespace std;
-vector<float> delta_z = {-0.232, -0.496, -0.744, -0.928, -1.0, -0.912, -0.616, -0.064, 0.792, 1};
+//vector<float> delta_z = {-0.232, -0.496, -0.744, -0.928, -1.0, -0.912, -0.616, -0.064, 0.792, 1};
+vector<float> delta_z = {0.035, 0.01, -0.005, 0.06, 0.2, 0.35};
+float delta_y = 0.2;
 vector<geometry_msgs::Point> trajectory;
 float qw, qx, qy, qz;
 
@@ -83,7 +85,16 @@ geometry_msgs::Quaternion get_required_angles(geometry_msgs::Point diff)
 }
 
 
+geometry_msgs::Twist get_diff(float counter, geometry_msgs::Point current_location, float velocity_multiplier)
+{
+	geometry_msgs::Twist diff;
+	diff.linear.x = (trajectory[counter].x - current_location.x) * velocity_multiplier;
+	diff.linear.y = (trajectory[counter].y - current_location.y) * velocity_multiplier;
+	diff.linear.z = (trajectory[counter].z - current_location.z) * velocity_multiplier;
 
+	return diff;
+
+}
 
 int main(int argc, char** argv)
 {
@@ -99,14 +110,11 @@ int main(int argc, char** argv)
 	
 	wait4connect();
 	wait4start();
-	
-
 	initialize_local_frame();
-	set_speed(2);
+	//set_speed(2);
 	takeoff(2);
-	ros::Rate rate(10.0);
 
-	float y_ = 0.2;
+	ros::Rate rate(25.0);
 
 	geometry_msgs::Point current_location = get_current_location();
 
@@ -120,10 +128,9 @@ int main(int argc, char** argv)
 
 	for(int i=0; i<delta_z.size(); i++)
 	{
-
 		geometry_msgs::Point p;
 		p.x = current_location.x;
-		p.y = current_location.y + 0.2*(i+1);
+		p.y = current_location.y + delta_y*(i+1);
 		p.z = current_location.z + delta_z[i];
 
 		trajectory.push_back(p);
@@ -131,19 +138,16 @@ int main(int argc, char** argv)
 
 	int counter = 0;
 
-
 	current_location = get_current_location();
 	geometry_msgs::Twist diff;
+	vector<float> velocity_multiplier_list = {1, 1.3, 1.8, 0.8, 0.35, 0.2};
+
 	while(ros::ok())
 	{	
 		
 		ros::spinOnce();
 		current_location = get_current_location();
-		
-		diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
-		diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
-		diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
-
+		diff = get_diff(counter, current_location, velocity_multiplier_list[counter]);
 
 		if (counter == 0)
 		{
@@ -152,18 +156,14 @@ int main(int argc, char** argv)
 
 		if (distance(diff) < 0.2 || counter == 0)
 		{	
-			//cout << " in <0.05" << endl;
 
 			if (counter < trajectory.size())
 			{	
 				
-
 				counter++;
 				ros::spinOnce();
 				current_location = get_current_location();
-				diff.linear.x = (trajectory[counter].x - current_location.x) * 1;
-				diff.linear.y = (trajectory[counter].y - current_location.y) * 1;
-				diff.linear.z = (trajectory[counter].z - current_location.z) * 1;
+				diff = get_diff(counter, current_location, velocity_multiplier_list[counter]);
 				glob_vel_pub.publish(diff);
 
 				cout << " current trajectory (x,y,z): " << trajectory[counter].x << " " << trajectory[counter].y << " " << trajectory[counter].z << endl;
@@ -174,13 +174,12 @@ int main(int argc, char** argv)
 			}			
 		}
 
-
 		ros::spinOnce();
 		
 		current_location = get_current_location();
-		if (current_location.z > (trajectory.back().z-0.1))
+		if (current_location.z > trajectory.back().z && current_location.y > trajectory.back().y)
 		{
-			cout << " trajectory[-1]-0.1: " << trajectory.back().z-0.1 << endl;
+			cout << " trajectory[-1]: " << trajectory.back().z << endl;
 			geometry_msgs::Twist vel;
 			vel.linear.x = 0;
 			vel.linear.y = 0;
