@@ -1,0 +1,12 @@
+std_msgs/Header header
+geometry_msgs/Point drone_coords
+geometry_msgs/Vector3 velocity
+geometry_msgs/Vector3 attitude
+geometry_msgs/Vector3 attitude_dot
+float64 cable_angle_theta
+float64 cable_angle_phi
+float64 cable_angle_dot_theta
+float64 cable_angle_dot_phi
+float64 radius
+geometry_msgs/Point branch_coords
+

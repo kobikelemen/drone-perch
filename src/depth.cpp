@@ -1,7 +1,4 @@
-
-
 #include <pcl/point_cloud.h>
-#include <gnc_functions.hpp>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
@@ -9,7 +6,7 @@
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
 #include <pcl_ros/transforms.h>
-#include <ros/ros.h>
+//#include <ros/ros.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
@@ -18,10 +15,13 @@
 #include <visualization_msgs/Marker.h>
 #include <vector>
 #include <stdlib.h>
+#include <boost/shared_ptr.hpp>
 #include <trajectory_functions.hpp>
+
+
 using namespace std;
 
-
+//drone_perch::state state;
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 vector<vector<double>> temp_points;
 vector<double> temp;
@@ -33,16 +33,18 @@ float branch_pos_z;
 float rel_branch_x;
 float rel_branch_y;
 bool perform_traj_bool = false;
-//bool move_start = false;
+
+
 //geometry_msgs::Point current_location;
 geometry_msgs::Point set_destination_coords;
+geometry_msgs::Point branch_location;
 
 // x coords are range(0,2,100), y coords >>
 //vector<double> test_trajectory = {0.0, -0.02, -0.042, -0.063, -0.086, -0.109, -0.133, -0.157, -0.182, -0.207, -0.232, -0.258, -0.284, -0.31, -0.336, -0.363, -0.39, -0.416, -0.443, -0.47, -0.496, -0.522, -0.548, -0.574, -0.6, -0.625, -0.65, -0.674, -0.698, -0.721, -0.744, -0.766, -0.787, -0.808, -0.828, -0.847, -0.865, -0.882, -0.899, -0.914, -0.928, -0.941, -0.953, -0.964, -0.973, -0.981, -0.988, -0.993, -0.997, -0.999, -1.0, -0.999, -0.997, -0.993, -0.987, -0.979, -0.969, -0.958, -0.945, -0.929, -0.912, -0.893, -0.871, -0.847, -0.821, -0.793, -0.762, -0.729, -0.694, -0.656, -0.616, -0.573, -0.528, -0.479, -0.429, -0.375, -0.319, -0.259, -0.197, -0.132, -0.064, 0.007, 0.081, 0.159, 0.239, 0.323, 0.41, 0.5, 0.594, 0.691, 0.792, 0.896, 1.004, 1, 1, 1, 1, 1, 1, 1}; // 1.115, 1.23, 1.349, 1.471, 1.598, 1.728, 1.862}
 
 void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 {	
-	
+
 	for(int i=0; i < msg->bounding_boxes.size(); i++)
 	{	
 		// Center of bounding box
@@ -55,15 +57,23 @@ void detection_cb(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg)
 	}
 }
 
-void move_start_trajectory()
+void move_start_trajectory(geometry_msgs::Point current_location)
 {
 	//geometry_msgs::Point original_location = get_current_location();
-	geometry_msgs::Point branch_location;
+	
 	branch_location.x = current_location.x + set_destination_coords.y;
 	branch_location.y = current_location.y + set_destination_coords.z;
 	branch_location.z = current_location.z + set_destination_coords.x;
+	// FOR ONLINE TRAJECTORY > 
 
-	set_destination(branch_location.x, branch_location.y-2, branch_location.z-current_location.z, 0);
+	// state.branch_coords.x = branch_location.x;
+	// state.branch_coords.y = branch_location.y;
+	// state.branch_coords.z = branch_location.z;
+	// state.radius = 0.01;
+	cout << " branch_location:   " << branch_location << endl;
+	cout << " current_location:   " << current_location << endl;
+	set_destination(branch_location.x, branch_location.y-0.55, branch_location.z-current_location.z, 0);
+	set_speed(0.05);
 	cout << " in move_start_trajectory() " << endl;
 	bool start_reached = false;
 	geometry_msgs::Point location;
@@ -72,12 +82,12 @@ void move_start_trajectory()
 		move_start = true;
 		ros::spinOnce();
 		location = get_current_location();
-		ros::Duration(0.01).sleep();
+		ros::Duration(0.05).sleep();
 		cout << " in WHILE LOOP in move_start_trajectory() " << endl;
-		cout << " destination set to: " << branch_location.x << " " << branch_location.y-2 << " " << branch_location.z << endl;
+		cout << " destination set to: " << branch_location.x << " " << branch_location.y-0.55<< " " << branch_location.z-current_location.z << endl;
 		cout << " current_location (WHILE LOOP): " << endl << location << endl;
 		cout << " branch_location: " << endl << branch_location << endl;
-		if ((location.y<(branch_location.y-1.7) && location.y>(branch_location.y-2.3)) && (location.z>(branch_location.z-0.3) && location.z<(branch_location.z+0.3))){
+		if ((location.y<(branch_location.y-0.4) && location.y>(branch_location.y-1.15)) && (location.z>(branch_location.z-0.2) && location.z<(branch_location.z+0.05))){
 			start_reached = true;
 		}
 
@@ -103,7 +113,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr & cloud) {
 	  //cout << " p1 " << endl << p1.x << " " << p1.y << " " << p1.z << endl;
 	  ros::Duration(0.1).sleep();
 
-	  if((p1.y>-0.1 && p1.y<0.1) && (p1.z>1.85 && p1.z<2.15))
+	  if((p1.y>-0.1 && p1.y<0.1) && (p1.z>0.4 && p1.z<0.7))
 			{
 
 				cout <<" its good " << endl;
@@ -167,8 +177,9 @@ int main(int argc, char** argv)
 	init_publisher_subscriber(nh);
 	wait4connect();
 	wait4start();
-	ros::Rate r(2.0);
-  takeoff(2);
+  	takeoff(2);
+  	ros::Rate r(2);
+
   //current_location = get_current_location();
 
 	while (!(current_location.z>1.9 && current_location.z<2.1) )
@@ -180,6 +191,8 @@ int main(int argc, char** argv)
 	ros::Subscriber sub2 = nh.subscribe("/darknet_ros/bounding_boxes", 1, detection_cb);
 	ros::Subscriber sub = nh.subscribe("/camera/depth/points",1, callback);
 	//marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+
+
 	initialize_local_frame();
 
 	while(ros::ok())
@@ -191,7 +204,7 @@ int main(int argc, char** argv)
 		if (move_start == true)
 		{
 			cout << " in if (move_start == true) " << endl;
-			move_start_trajectory();
+			move_start_trajectory(current_location);
 			move_start = false;
 		}
 		if (perform_traj_bool == true)
@@ -206,3 +219,11 @@ int main(int argc, char** argv)
 }
 
 	
+
+
+
+
+
+
+
+

@@ -80,6 +80,7 @@ geometry_msgs::Point enu_2_local(nav_msgs::Odometry current_pose_enu)
 //get current position of drone
 void pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
   current_pose_g = *msg;
   enu_2_local(current_pose_g);
   float q0 = current_pose_g.pose.pose.orientation.w;
