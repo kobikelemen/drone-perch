@@ -184,6 +184,10 @@ add_executable(test_trajectory src/test_trajectory.cpp)
 target_link_libraries(test_trajectory ${catkin_LIBRARIES})
 add_dependencies(test_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(test_2m src/test_2m.cpp)
+target_link_libraries(test_2m ${catkin_LIBRARIES})
+
+
 #############
 ## Install ##
 #############

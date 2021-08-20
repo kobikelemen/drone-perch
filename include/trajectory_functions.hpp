@@ -30,6 +30,8 @@
 #include <mavros_msgs/AttitudeTarget.h>
 #include <math.h>
 
+//#include </home/kobi/catkin_ws/src/mavros_controller/trajectory_publisher/include/trajectoryPublisher.h/>
+
 using namespace std;
 
 ifstream trajectoryFile("/home/kobi/catkin_ws/src/drone_perch/include/trajectories.txt");
