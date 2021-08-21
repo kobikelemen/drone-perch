@@ -163,15 +163,15 @@ include_directories(
 # )
 
 
-add_executable(depth src/depth.cpp)
+add_executable(depth src/trajectory_follow/depth.cpp)
 ###### DONT INCLUDE THIS >>> target_link_libraries(depth ${catkin_LIBRARIES})
 add_dependencies(depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(main src/main.cpp)
+add_executable(main src/trajectory_follow/main.cpp)
 target_link_libraries ( main ${PCL_LIBRARIES} ${catkin_LIBRARIES}  )
 add_dependencies(main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(traj src/traj.cpp)
+add_executable(traj src/trajectory_follow/traj.cpp)
 ###########target_link_libraries ( traj ${PCL_LIBRARIES} ${catkin_LIBRARIES}  )
 add_dependencies(traj ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -180,11 +180,11 @@ add_dependencies(traj ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARG
 
 
 
-add_executable(test_trajectory src/test_trajectory.cpp)
+add_executable(test_trajectory src/trajectory_follow/test_trajectory.cpp)
 target_link_libraries(test_trajectory ${catkin_LIBRARIES})
 add_dependencies(test_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(test_2m src/test_2m.cpp)
+add_executable(test_2m src/trajectory_follow/test_2m.cpp)
 target_link_libraries(test_2m ${catkin_LIBRARIES})
 
 
@@ -198,7 +198,7 @@ target_link_libraries(test_2m ${catkin_LIBRARIES})
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  src/RL/QuadNew.py
+  src/old_stuff/generate_test_points.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -270,4 +270,6 @@ message("boost inc ${Boost_INCLUDE_DIR}")
 
 ## USING BOOST LIBRARY BREAKS EVERYTHING ... :(
 #target_link_libraries(depth ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+
 

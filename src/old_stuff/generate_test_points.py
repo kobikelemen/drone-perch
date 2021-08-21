@@ -1,19 +1,11 @@
-import matplotlib.pyplot as plt
-import pylab
+#!/usr/bin/env python
 
- 
+import rospy
+from gazebo_msgs.srv import GetLinkState
+from gazebo_msgs.srv import GetModelState
 
-x = pylab.array([i/10 for i in range(0,10)])
 
-y = pylab.array([0, 0.2, 0.3, 0.25, 0.2, 0.15, 0.15, 0.25, 0.45, 0.75])
-
- 
-
-a = pylab.polyfit(x, y, deg=7)
-esty = a[0]*(x**7) + a[1]*(x**6) + a[2]*(x**5) + a[3]*(x**4) + a[4]*(x**3) + a[5]*(x**2) +a[6]*(x) + a[7]
-
-plt.plot(x,y)
-
-plt.plot(x,esty)
-
-plt.show()
+getPayloadState = rospy.ServiceProxy('/gazebo/get_link_state', GetLinkState)
+rospy.wait_for_service('/gazebo/get_link_state')
+print(getPayloadState('branch_new_2m::link_0', 'ground_plane'))
+#print('pos: ', state.link_state.pose.position.x, state.link_state.pose.position.y, state.link_state.pose.position.z)

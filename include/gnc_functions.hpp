@@ -151,7 +151,7 @@ This function is used to command the drone to fly to a waypoint. These waypoints
 void set_destination(float x, float y, float z, float psi)
 {
 	set_heading(psi);
-	//transform map to local
+	//transform map to localwaypoint_g
 	float deg2rad = (M_PI/180);
 	float Xlocal = x*cos((correction_heading_g + local_offset_g - 90)*deg2rad) - y*sin((correction_heading_g + local_offset_g - 90)*deg2rad);
 	float Ylocal = x*sin((correction_heading_g + local_offset_g - 90)*deg2rad) + y*cos((correction_heading_g + local_offset_g - 90)*deg2rad);
