@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 #include <gnc_functions.hpp>
 #include <mavros_msgs/CommandTOL.h>
 #include <mavros_msgs/CommandLong.h>
