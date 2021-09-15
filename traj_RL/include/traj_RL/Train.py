@@ -27,7 +27,7 @@ import os
 import signal
 
 class Duocopter():
-    def __init__(self,gnc, action_dim =4,state_dim=4,
+    def __init__(self,gnc, action_dim=3,state_dim=4,
                 initial_state=None,
                 model_path='/home/kobi/catkin_ws/src/traj_RL/trained_models/',
                 save_command="on",load_command="on",
@@ -92,8 +92,10 @@ class Duocopter():
         self.isDone = False
         self.last_state = None
         self.last_action = None
-        self.action_low = np.array([-pi/2, -0.873, 0,-pi/2, -0.873, 0])
-        self.action_high = np.array([pi/2, 0.873, 2, pi/2, 0.873, 2])
+        self.action_low = np.array([-pi/2, 0,-pi/2, 0])
+        self.action_high = np.array([pi/2, 2, pi/2, 2])
+        #self.action_low = np.array([-pi/2, -0.873, 0,-pi/2, -0.873, 0])
+        #self.action_high = np.array([pi/2, 0.873, 2, pi/2, 0.873, 2])
         self.batch_size=30
         self.save_command=save_command
         self.load_command=load_command
@@ -155,7 +157,7 @@ class Duocopter():
         self.stopDrone()
 
         print('----------position---------', self.gnc.get_current_location())
-        self.gnc.set_destination(0,0,1.35,0)
+        self.gnc.set_destination(0,0,1.2,0)
         modelState = ModelState()
         modelState.model_name = 'drone_kinect_fixed_rope5'
         """
@@ -178,21 +180,6 @@ class Duocopter():
         modelState.twist.angular.x = 0
         modelState.twist.angular.y = 0
         modelState.twist.angular.z = 0
-
-
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-
-
 
         self.setModelState(modelState)
         rospy.sleep(8)
@@ -297,17 +284,17 @@ class Duocopter():
         self.last_state = self.all_state
         if self.mode == 'train':
             action = np.array(self.model.action(self.all_state)) 
-            waypoint =self.scaleAction(action)
+            waypoint = self.scaleAction(action)
             self.waypoints.append([self.waypoints[-1][0]+waypoint[0], self.waypoints[-1][1]+waypoint[1],
-                                    waypoint[2], waypoint[3]])
-            self.waypoints.append([self.waypoints[-1][0]+waypoint[4], self.waypoints[-1][1]+waypoint[5],
-                                    waypoint[6], waypoint[7]])
+                                    waypoint[2]])
+            self.waypoints.append([self.waypoints[-1][0]+waypoint[3], self.waypoints[-1][1]+waypoint[4],
+                                    waypoint[5]])
 
         elif mode == 'test':
             action = np.array(self.model.determinant_action(self.all_state))    # NEED TO ADD DETERMINANT TRAJECTORY GENERATION
             waypoint =self.scaleAction(action)                      # WHERE THE NEXT STATE IS ASSUMED TO BE GIVEN BY PREDICTED STATE > MAKE ALL WAYPOINTS
-            self.waypoints.append(waypoint[0:4])
-            self.waypoints.append(waypoint[4:8])
+            self.waypoints.append(waypoint[0:3])
+            self.waypoints.append(waypoint[3:6])
         self.approximateTrajectoryFunction()
 
 
@@ -345,14 +332,14 @@ class Duocopter():
         print('----in trajectorySegment----')
         pnts_per_waypnt = 5
         wypnts_per_actions = 2
-        startPitch = self.desired_trajectory[-pnts_per_waypnt*wypnts_per_actions-1][2]
-        endPitch = self.desired_trajectory[-1][2]
-        startVel = self.desired_trajectory[-pnts_per_waypnt*wypnts_per_actions-1][3]
-        endVel = self.desired_trajectory[-1][3]
-        return (startPitch, endPitch, startVel, endVel)
+        #startPitch = self.desired_trajectory[-pnts_per_waypnt*wypnts_per_actions-1][2]
+        #endPitch = self.desired_trajectory[-1][2]
+        startVel = self.desired_trajectory[-pnts_per_waypnt*wypnts_per_actions-1][2]
+        endVel = self.desired_trajectory[-1][2]
+        return (startVel, endVel)
 
 
-    def follow_trajectory_segment(self, startPitch, endPitch, startVel, endVel):
+    def follow_trajectory_segment(self, startVel, endVel):
 
         print('----in follow_trajectory_segment-----')
         r = rospy.Rate(self.segmentLength*6)
@@ -372,7 +359,7 @@ class Duocopter():
         segment_start_y = self.y
         while not self.y >= end_y and not rospy.is_shutdown():
             #print('----count----', count)
-            if instant_track_error>0.1:
+            if instant_track_error > 0.1:
                 var = 0.1
             else:
                 var = instant_track_error
@@ -424,53 +411,6 @@ class Duocopter():
             branch_z = self.branchState.pose.position.z
 
 
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-        # ===============================================================================
-
-        #######  --------->>>>> backup_Train.py CONTAINS NEW CODE <<<<<--------------
-
-        # ===============================================================================
-
-
             self.y = pos.y - self.start_pos[0]
             self.z = pos.z - self.start_pos[1]
             self.actual_trajectory.append([self.y,self.z])
@@ -504,15 +444,16 @@ class Duocopter():
 
 
     def scaleAction(self, action):
-        # self.action_high = np.array([pi/2, 0.873, 2, pi/2, 0.873, 2])
+        #np.array([-pi/2, 0,-pi/2, 0])
+        #np.array([-pi/2, -0.873, 0,-pi/2, -0.873, 0])
         self.last_action = action
-        action_ = [action[0]*self.action_high[0], action[1]*self.action_high[1],
-                    (action[2]+1)*self.action_high[2]/2, action[3]*self.action_high[3],
-                    action[4]*self.action_high[4], (action[5]+1)*self.action_high[5]/2]
+        action_ = [action[0]*self.action_high[0],
+                    (action[1]+1)*self.action_high[1]/2, action[2]*self.action_high[2],
+                    (action[3]+1)*self.action_high[3]/2]
 
         waypntDis = 0.15
-        a = [waypntDis*cos(action_[0]), waypntDis*sin(action_[0]), action_[1], action_[2],
-            waypntDis*cos(action_[3]), waypntDis*sin(action_[3]), action_[4], action_[5]]
+        a = [waypntDis*cos(action_[0]), waypntDis*sin(action_[0]), action_[1],
+            waypntDis*cos(action_[2]), waypntDis*sin(action_[2]), action_[3]]
         return a
 
 
@@ -598,7 +539,7 @@ class Duocopter():
                 i -= 1
             print('----prev pos----', self.actual_trajectory[i])
             print('----branch pos-----', self.branchState, '\n-----self.start_pos------', self.start_pos)
-            if True:
+            if True: # or if crash crash
             #check_crash(self.actual_trajectory[-2], self.actual_trajectory[-1], self.branchState, self.start_pos)==False:
                 print("Attached")
                 print('--VELOCITY--', velMagn)
@@ -606,13 +547,15 @@ class Duocopter():
                 standard = self.energy_standard()
                 if self.energy >= standard:
                     print("sufficient energy for perching %.3f/%.3f" %(self.energy,standard))
-                    if self.mode == "train":
-                        self.model_saver(self.model_path)
+                    
                     reward += 400
                     self.isDone = True
                 else :
                     print("not sufficient energy %.3f/%.3f" %(self.energy,standard))
                     self.isDone = True
+                if self.mode == "train":
+                    self.model_saver(self.model_path)
+
             else:
                 print('---> CRASH ')
                 self.isDone = True
@@ -673,10 +616,10 @@ class Duocopter():
 
     def model_saver(self,model_path):
         if self.save_command=="on":
-            torch.save(self.model.value_net.state_dict(), model_path+"value_13th_sep.dat")
-            torch.save(self.model.target_value_net.state_dict(), model_path+"target_13th_sep.dat")
-            torch.save(self.model.q_net.state_dict(), model_path+"qvalue_13th_sep.dat")
-            torch.save(self.model.policy_net.state_dict(), model_path+"policy_13th_sep.dat")
+            torch.save(self.model.value_net.state_dict(), model_path+"value_14th_sep.dat")
+            torch.save(self.model.target_value_net.state_dict(), model_path+"target_14th_sep.dat")
+            torch.save(self.model.q_net.state_dict(), model_path+"qvalue_14th_sep.dat")
+            torch.save(self.model.policy_net.state_dict(), model_path+"policy_14th_sep.dat")
             print('save model sucessfully')
 
 
@@ -685,14 +628,14 @@ class Duocopter():
         print('MODEL_LOADER CALLED')
         if os.path.exists(model_path+"policy.dat") and self.load_command=="on":
             print("PATH EXISTS")
-            self.model.value_net.load_state_dict(torch.load(model_path+"value_13th_sep.dat"))
+            self.model.value_net.load_state_dict(torch.load(model_path+"value_14th_sep.dat"))
             self.model.value_net.eval()
-            self.model.target_value_net.load_state_dict(torch.load(model_path+"target_13th_sep.dat"))
+            self.model.target_value_net.load_state_dict(torch.load(model_path+"target_14th_sep.dat"))
             self.model.target_value_net.eval()
-            self.model.q_net.load_state_dict(torch.load(model_path+"qvalue_13th_sep.dat"))
+            self.model.q_net.load_state_dict(torch.load(model_path+"qvalue_14th_sep.dat"))
             self.model.q_net.eval()
-            self.model.policy_net.load_state_dict(torch.load(model_path+"policy_13th_sep.dat"))
+            self.model.policy_net.load_state_dict(torch.load(model_path+"policy_14th_sep.dat"))
             self.model.policy_net.eval()
-            self.model.policy_net_local.load_state_dict(torch.load(model_path+"policy_13th_sep.dat"))
+            self.model.policy_net_local.load_state_dict(torch.load(model_path+"policy_14th_sep.dat"))
             self.model.policy_net_local.eval()
             print('load model sucessfully')
