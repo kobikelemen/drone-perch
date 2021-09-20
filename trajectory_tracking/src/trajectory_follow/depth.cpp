@@ -145,34 +145,34 @@ void callback(const sensor_msgs::PointCloud2ConstPtr & cloud) {
 }
 
 
-// void visualize_cloud()
-// {
-// 	visualization_msgs::Marker points;
-// 	points.header.frame_id = "my_frame";
-// 	points.header.stamp = ros::Time::now();
-// 	points.ns = "depth";
-// 	points.action = visualization_msgs::Marker::ADD;
-// 	points.pose.orientation.w = 1.0;
-// 	points.scale.x = 0.2;
-// 	points.scale.y = 0.2;
-// 	points.id = 0;
-// 	points.type = visualization_msgs::Marker::POINTS;
-// 	points.color.g = 1.0f;
-// 	points.color.a = 1.0;
+void visualize_cloud()
+{
+	visualization_msgs::Marker points;
+	points.header.frame_id = "my_frame";
+	points.header.stamp = ros::Time::now();
+	points.ns = "depth";
+	points.action = visualization_msgs::Marker::ADD;
+	points.pose.orientation.w = 1.0;
+	points.scale.x = 0.2;
+	points.scale.y = 0.2;
+	points.id = 0;
+	points.type = visualization_msgs::Marker::POINTS;
+	points.color.g = 1.0f;
+	points.color.a = 1.0;
 
-// 	for(int j=0; j<temp_points.size(); j++)
-// 	{	
-// 		vector<char> branch_label = {'x', 'y', 'z'};
-// 		geometry_msgs::Point p;
-// 		p.x = temp_points[j][0];
-// 		p.y = temp_points[j][1];
-// 		p.z = temp_points[j][2];
-// 		points.points.push_back(p);
-// 	}
+	for(int j=0; j<temp_points.size(); j++)
+	{	
+		vector<char> branch_label = {'x', 'y', 'z'};
+		geometry_msgs::Point p;
+		p.x = temp_points[j][0];
+		p.y = temp_points[j][1];
+		p.z = temp_points[j][2];
+		points.points.push_back(p);
+	}
 
-// 	marker_pub.publish(points);
-// 	ros::spinOnce();
-// }
+	marker_pub.publish(points);
+	ros::spinOnce();
+}
 
 
 int main(int argc, char** argv)

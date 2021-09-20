@@ -161,7 +161,6 @@ int main(int argc, char** argv)
 				glob_vel_pub.publish(diff);
 
 				cout << " current trajectory (x,y,z): " << trajectory[counter].x << " " << trajectory[counter].y << " " << trajectory[counter].z << endl;
-		
 				cout << " current location (x,y,z): " << current_location.x << " " << current_location.y << " " << current_location.z << endl;
 				cout << " diff (x,y,z) " << diff.linear.x << " " << diff.linear.y << " " << diff.linear.z << " " << endl;
 

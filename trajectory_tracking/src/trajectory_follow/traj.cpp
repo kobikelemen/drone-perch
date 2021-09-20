@@ -96,9 +96,6 @@ void Drone::getTrajectory()
 geometry_msgs::Twist Drone::getVel(vector<State> state_list, float counter)
 {
 	geometry_msgs::Twist diff;
-	// diff.linear.x = 0;
-	// diff.linear.y = state_list[counter].vel_x;   
-	// diff.linear.z = state_list[counter].vel_z; 
 	diff.angular.x = state_list[counter].ang_vel_x;
 	diff.angular.y = 0;
 	diff.angular.z = 0; 
@@ -133,21 +130,6 @@ void Drone::performTrajectory()
 		thrust_cmd = trajectory[counter].thrust;
 		mavros_msgs::AttitudeTarget thrust_target;
 		thrust_target.thrust = thrust_cmd;
-		// if (counter == 0){
-		// 	glob_vel_pub.publish(vel);
-		// 	thrust_pub .publish(thrust_cmd);
-		// }
-
-		// if ((distanceNextPoint(current_location, counter, state_list) < 0.2 || counter == 0) && counter < state_list.size())
-		// {	
-
-		// 	counter++;
-		// 	ros::spinOnce();
-		// 	current_location = get_current_location();
-		// 	vel = getVel(state_list, counter, current_location);
-		// 	glob_vel_pub.publish(vel);
-		// 	thrust_pub .publish(thrust_cmd);
-		// }
 	
 		ros::spinOnce();
 		vel = getVel(trajectory, counter);

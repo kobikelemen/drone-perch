@@ -93,56 +93,6 @@ geometry_msgs::Twist get_diff(vector<State> state_list, float counter, geometry_
 
 
 
-// vector<State> getTrajectory(geometry_msgs::Point current_location)
-// {
-// 	bool test = false;
-// 	vector<State> out_list;
-// 	int count_;
-// 	for (string line; getline(trajectoryFile, line); )
-// 	{	
-// 		if (test == true){
-// 			if (count_ == 0){
-// 				for (int x_coord=1; x_coord < line.length(); x_coord++){
-// 					State s = State();
-// 					float delta_x = line[x_coord] - line[x_coord-1];
-// 					s.traj_y = current_location.y + delta_x; 
-// 					out_list.push_back(s);
-// 				}
-// 			}else if(count_ == 1){
-// 				for (int z_coord=1; z_coord < line.length(); z_coord++){
-// 					float delta_z = line[z_coord]-line[z_coord-1];
-// 					out_list[z_coord-1].traj_z = current_location.z + delta_z;
-// 				}
-// 			}else if(count_ == 2){
-// 				for (int speed=0; speed < line.length(); speed++){
-// 					out_list[speed].speed_mult = line[speed];
-// 				}
-// 			}else if(count_ == 3){
-// 				for (int speed=0; speed < line.length(); speed++){
-// 					out_list[speed].speed_mult = sqrt(pow(out_list[speed].speed_mult, 2) + pow(line[speed], 2));
-// 				}
-
-// 				return out_list;
-// 			}	
-// 		}
-
-// 		//check what trajecory is wanted ...
-// 		string st = boost::lexical_cast<string>(line[0]);
-
-// 		if (st == "2"){
-// 			test = true;
-// 			count_ = 0;
-// 		}
-// 	}
-// 	return out_list;
-// }
-
-
-
-
-
-
-// x, y, x_vel, z_vel >>
 
 
 // TEMPORARY
