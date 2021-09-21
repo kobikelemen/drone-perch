@@ -32,7 +32,7 @@ class Duocopter():
     def __init__(self,gnc, action_dim=6,state_dim=4,
                 initial_state=None,
                 model_path='/home/kobi/catkin_ws/src/traj_RL/trained_models/',
-                save_command="on",load_command="off",
+                save_command="on",load_command="on",
                 mode='train'):
         
         # states are position (x,y), angle (pitch), velocity (x,y), ang vel (pitch rate), acceleration (x,y)
@@ -69,6 +69,10 @@ class Duocopter():
         self.all_state= np.array([pos_x, pos_z,
                             tetherRoll, 0.0, 0.0, 0.0, payload.link_state.twist.angular.y, 0.0, 0.01], dtype=np.float32)
         # x distance to branch, z distance to branch, tether-roll, drone-pitch, drone-vel-y, drone-vel-z, tether-angle-dot, drone-angle-dot, branch-radius        
+        
+
+        # DRONE PITCH IS ALWAYS 0... I THINK 
+
         self.listener()
 
         self.energy_threshold = self.energy_standard()
@@ -92,13 +96,14 @@ class Duocopter():
         self.isDone = False
         self.last_state = None
         self.last_action = None
-        self.action_low = np.array([-pi/2, 0,-pi/2, 0, -pi/2, 0])
-        self.action_high = np.array([pi/2, 2, pi/2, 2, pi/2, 0])
-        self.batch_size=50
+        #self.action_low = np.array([-pi/2, 0,-pi/2, 0, -pi/2, 0])
+        self.action_high = np.array([1.5, 2, 1.5, 2, 1.5, 2])
+        # 1.5 radians instead of pi/2 to avoid vertical
+        self.batch_size = 50
         self.save_command=save_command
         self.load_command=load_command
         self.model_path = model_path
-        self.model = SAC(action_dim =len(self.action_high),state_dim=len(self.all_state),hidden_dim=256,buffer_size=1000000)
+        self.model = SAC(action_dim=len(self.action_high),state_dim=len(self.all_state),hidden_dim=256,buffer_size=1000000)
         if load_command == 'on':
             self.model_loader(self.model_path)
         self.pause = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
@@ -165,7 +170,7 @@ class Duocopter():
         self.stopDrone()
 
         print('----------position---------', self.gnc.get_current_location())
-        self.gnc.set_destination(0,0,1.2,0)
+        self.gnc.set_destination(0,0,1.05,0)
         modelState = ModelState()
         modelState.model_name = 'drone_kinect_fixed_rope5'
         modelState.pose.position.x = global_start.pose.position.x
@@ -253,7 +258,6 @@ class Duocopter():
         x = location.x
         r = rospy.Rate(3)
         while (z<takeoffHeight-0.1 or z>takeoffHeight+0.1) and (x<0.5 or x>0.9) and (y<-0.2 or y>0.2):
-            #self.listener()
             r.sleep()
             location = self.gnc.get_current_location()
             print('--------location---------', location)
@@ -280,10 +284,17 @@ class Duocopter():
         self.last_state = self.all_state
         if self.mode == 'train':
             action = np.array(self.model.action(self.all_state)) 
+            print(' ============================')
+            print(' ============================')
+            print(' ---- raw action ---- ', action)
+            print(' ============================')
+            print(' ============================')
+
             waypoint = self.scaleAction(action)
-            self.updateState()
-            
-            waypoints.append([self.y, self.z, sqrt(self.all_state[4]**2 + self.all_state[5]**2)])
+            print(' ----- SCALED ACTION ----- ', waypoint)
+            #self.updateState()
+            s = self.getModelState('drone_kinect_fixed_rope5', 'world')
+            waypoints.append([self.y, self.z, sqrt(s.twist.linear.x**2 + s.twist.linear.z**2)])
             
             waypoints.append([
                 waypoints[-1][0]+waypoint[0], 
@@ -323,7 +334,7 @@ class Duocopter():
 
         self.polynomial = interp1d(y, z, kind='cubic')
 
-    def follow_trajectory_segment(self, startVel, endVel, waypoints):
+    def follow_trajectory_segment(self, startVel, endVel, waypoints, global_start):
 
         print('----in follow_trajectory_segment-----') 
         print('--- waypoints ----', waypoints)
@@ -353,11 +364,15 @@ class Duocopter():
                 self.y = 0
 
             try:
+                print(' --- in try ---- ')
+                print(' ---- end_y ----', end_y)
+                print(' --- self.y + delta_y ---- ', self.y + delta_y)
                 delta_z = self.polynomial(self.y + delta_y) - self.z #self.polynomial(self.y+delta_y) 
             except:
                 print('---self.y + delta_y is too big, calling reset---')
-                self.reset(None)
-                print(1/0)
+                self.reset(global_start)
+                return 0
+
             #print('---delta_y---', delta_y)
             #print('---delta_z----', delta_z)
             unit_vec = np.array([2*delta_y/sqrt((2*delta_y)**2 + delta_z**2), delta_z/sqrt((2*delta_y)**2 + delta_z**2)])
@@ -371,7 +386,7 @@ class Duocopter():
                 speed = 0.1
             print(' ----- self.y ----', self.y)
             st = self.getModelState('drone_kinect_fixed_rope5', 'world')
-            print(' ----- model_state (x,y) -----', st.pose.position.x, st.pose.position.z)
+            print(' ----- model_velocity (x,y) -----', st.twist.linear.x, st.twist.linear.z)
             velocity = unit_vec * speed
             
             self.velocity_list.append(list(velocity))
@@ -406,7 +421,7 @@ class Duocopter():
             rospy.sleep(4)
             """
 
-
+            #print(' --- all_state ---- ', self.all_state)
             pos = self.getModelState('drone_kinect_fixed_rope5', 'world')
             branch_y = self.branchState.pose.position.x
             branch_z = self.branchState.pose.position.z
@@ -427,7 +442,7 @@ class Duocopter():
         if len(self.actual_trajectory) > 0:
             if first:
                 first_pos = [self.y, self.z]
-            print(' ---- self.actual_trajectory ---- ', self.actual_trajectory)
+            #print(' ---- self.actual_trajectory ---- ', self.actual_trajectory)
             seg_error = self.calc_error(self.polynomial, self.actual_trajectory, waypoints, first_pos)
         
             print(' ---- self.y AFTER while loop --- ', self.y)
@@ -441,14 +456,13 @@ class Duocopter():
         else:
             print('-- len(actual_trajectory) -- ', len(self.actual_trajectory))
             print(' len(self.actual_trajectory) IS ZERO, EXITING ... ')
-            assert 1==2
+            #assert 1==2
 
 
     def calc_error(self, poly, actual_trajectory, waypoints, first_pos):
 
 
-        # first_pos gives start of segment in self.actual_traj 
-
+        #print(' ---- waypoints ------ ', waypoints)
         tracking_error = []
         start_y = waypoints[0][0]
         j = 0
@@ -468,27 +482,28 @@ class Duocopter():
             check_z = start_z_acc + wypnt[1]
             if check_y < 0:
                 check_y = 0
-                print(' ----- in check_y < 0 ------')
+                #print(' ----- in check_y < 0 ------')
             elif check_y > actual_trajectory[-1][0]:
-                print(' ---- in check_y > actual_trajectory[-1][0] ---- ')
+                #print(' ---- in check_y > actual_trajectory[-1][0] ---- ')
                 check_y = actual_trajectory[-1][0]
 
-            print(' ---- check_y ----- ', check_y)
+            #print(' ---- check_y ----- ', check_y)
             for i in range(start, len(actual_trajectory)-1):
-                print(' ---- for loop range: ---', start, ' to ', len(actual_trajectory)-1)
-                print(' --- i ----- ', i)
+                #print(' ---- for loop range: ---', start, ' to ', len(actual_trajectory)-1)
+                #print(' --- i ----- ', i)
 
-                print(' ---- actual_trajectory[i][0] ---- ', actual_trajectory[i][0])
-                print(' ---- actual_trajectory[i+1][0] ---- ', actual_trajectory[i+1][0])
+                #print(' ---- actual_trajectory[i][0] ---- ', actual_trajectory[i][0])
+                #print(' ---- actual_trajectory[i+1][0] ---- ', actual_trajectory[i+1][0])
                 if check_y >= actual_trajectory[i][0] and check_y <= actual_trajectory[i+1][0]:
-                    print(' --- in if check_y... ----')
+                    #print(' --- in if check_y... ----')
                     start = i
-                    interp = (abs(actual_trajectory[start][0]-check_y)/abs(actual_trajectory[start+1][0]-actual_trajectory[start][0])) * abs(actual_trajectory[start+1][1]-actual_trajectory[start][1])
-                    z_interp = actual_trajectory[start][1] + interp
+                    interp_frac = (abs(actual_trajectory[start][0]-check_y)/abs(actual_trajectory[start+1][0]-actual_trajectory[start][0]))
+                    print(' ---- interp_y ---- ', actual_trajectory[start][0] + interp_frac * abs(actual_trajectory[start+1][0]-actual_trajectory[start][0]))
+                    z_interp = actual_trajectory[start][1] + interp_frac * abs(actual_trajectory[start+1][1]-actual_trajectory[start][1])
                     tracking_error.append(abs(z_interp - wypnt[1]))
-                    print(' --- tracking_error --- ', tracking_error)
+                    print(' --- tracking_error recent --- ', tracking_error[-1])
                     break 
-        print(' --- self.tracking_error_list ---- ', self.tracking_error_list)
+        #print(' --- self.tracking_error_list ---- ', self.tracking_error_list)
         self.tracking_error_list += tracking_error
         return sum(tracking_error)
 
@@ -507,13 +522,13 @@ class Duocopter():
 
 
     def scaleAction(self, action):
-        #np.array([-pi/2, 0,-pi/2, 0])
-        #np.array([-pi/2, -0.873, 0,-pi/2, -0.873, 0])
+        #np.array([pi/2, 2, pi/2, 2, pi/2, 2])
         self.last_action = action
-        action_ = [action[0]*self.action_high[0],
-                    (action[1]+1)*self.action_high[1]/2, action[2]*self.action_high[2],
-                    (action[3]+1)*self.action_high[3]/2, action[4]*self.action_high[4],
-                    (action[5]+1)*self.action_high[5]/2]
+        action_ = [
+                    action[0]*self.action_high[0], (action[1]+1)*self.action_high[1]/2,
+                     action[2]*self.action_high[2], (action[3]+1)*self.action_high[3]/2,
+                     action[4]*self.action_high[4], (action[5]+1)*self.action_high[5]/2
+                    ] 
 
         waypntDis = 0.15/3  # <--three waypoints per action ...?
         a = [
@@ -521,7 +536,7 @@ class Duocopter():
         waypntDis*cos(action_[2]), waypntDis*sin(action_[2]), action_[3],
         waypntDis*cos(action_[4]), waypntDis*sin(action_[4]), action_[5],
         ]
-        print(' ---- action in scaleAction ---- ', a)
+        #print(' ---- action in scaleAction ---- ', a)
         return a
 
 
@@ -581,6 +596,7 @@ class Duocopter():
         reward = 0
         Distance = self.distance()
         reward -= abs(Distance-(self.all_state[-1]-0.1))*0.3
+        print(' ======= energy ======= ', self.energy)
         reward += self.energy # REMOVED G.P.H. ENERGY FROM REWARD, ONLY BALL K.E. MAKES IT UP
         
         """
