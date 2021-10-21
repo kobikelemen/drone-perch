@@ -7,7 +7,11 @@ The goal of this project is to train a drone agent to produce feasible trajector
 
 Two approaches were taken. The first was a control approach where the agent's action space is the throttle on the motors. This was done by making a python simulation using the equations of motion for the system acting as the environment. This was done with both the 2D and 3D dynamics with similar results. This was visualised with a matplotlib animation. 
 
-![DCC96FB6-A241-4CF2-9513-434EFA3456A8_1_201_a](https://user-images.githubusercontent.com/85403218/138271286-142f58b5-3445-4b3e-9a87-3869dd68627a.jpeg)
+
+![DCC96FB6-A241-4CF2-9513-434EFA3456A8_1_201_a](https://user-images.githubusercontent.com/85403218/138347417-4ee84e53-c55d-4cdd-80f0-f835c5653ebd.jpeg)
+
+
+![CF18599D-3A70-4C54-A175-34CD4FCC03EF_1_201_a](https://user-images.githubusercontent.com/85403218/138347570-346a4a58-12b4-4d87-9581-4567b2eef668.jpeg)
 
 
 There are two parts, the first is the 'traj_RL' directory. This contains a Soft Actor Critic RL model which is setup to train the agent to produce a series of waypoints which make up a trajectory to perch the drone. The model is trained in a custom Gazebo - ROS envirnment to ensure accurate and reproducable physical results. The aim of the 'waypoint' approach as opposed to the classic 'control' RL approach is the reduce the search space for the RL - leaving the heavy lifting of the control to the Ardupilot controller, allowing it to focus on learning an appropriate policy for perching from many starting points. 
