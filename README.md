@@ -3,9 +3,9 @@
 Summer 2021 UROP project
 
 
-The goal of this project is to train a drone agent to produce feasible trajectories which result in the cable hanging off the bottum of the drone wrapping around a target branch.
+The goal of this project is to train a drone agent to produce feasible trajectories which result in the cable hanging off the bottom of the drone wrapping around a target branch.
 
-Two approaches were taken. The first was a control approach where the agent's action space is the throttle on the motors. This was done by making a python simulation using the equations of motion for the system acting as the environment. This was done with both the 2D and 3D dynamics with similar results. This was visualised with a matplotlib animation. 
+Two approaches were taken. The first was a control approach where the agent's action space is the throttle on the motors. This was done by making a python simulation using the equations of motion for the system acting as the environment. This was done with both the 2D and 3D dynamics with similar results and was visualised with a matplotlib animation. 
 
 
 ![DCC96FB6-A241-4CF2-9513-434EFA3456A8_1_201_a](https://user-images.githubusercontent.com/85403218/138347417-4ee84e53-c55d-4cdd-80f0-f835c5653ebd.jpeg)
