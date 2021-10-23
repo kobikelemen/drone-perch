@@ -12,8 +12,8 @@ def eulerToQuat(roll, pitch, yaw):
     w = cr * cp * cy + sr * sp * sy
     x = sr * cp * cy - cr * sp * sy
     y = cr * sp * cy + sr * cp * sy
-    z = cr * cp * sy - sr * sp * cy     ### NOT SURE SHOULD PUBLISH QUAT AS X,Y,Z,W OR W,X,Y,Z ???
-    return x, y, z, w                   ## DIFFERENT ON WIKIPEDIA COMPARED TO MAVROS ...
+    z = cr * cp * sy - sr * sp * cy     
+    return x, y, z, w                   
 
 
 def quatToEuler(w, x, y, z):

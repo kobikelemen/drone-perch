@@ -14,33 +14,23 @@ from .ReplayBuffer import *
 class SAC():
     def __init__(self,action_dim =None,state_dim=None,hidden_dim=30,buffer_size=1000000,loss_criteria=nn.MSELoss()):
 
-        # define model structure
         self.action_dim = action_dim
         self.state_dim  = state_dim
         self.hidden_dim = hidden_dim
-
-
-        # initialize local and target state value net
-        self.value_net        = ValueNetwork(state_dim, hidden_dim)
+        self.value_net = ValueNetwork(state_dim, hidden_dim)
         self.target_value_net = ValueNetwork(state_dim, hidden_dim)
 
-        # unify target value net
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):
             target_param.data.copy_(param.data)
 
-        # initialize the action state value net and the local and target policy model
         self.q_net = QNetwork(state_dim, action_dim, hidden_dim)
         self.policy_net = PolicyNetwork(state_dim, action_dim, hidden_dim)
         self.policy_net_local = PolicyNetwork(state_dim, action_dim, hidden_dim)
         self.replay_buffer = ReplayBuffer(buffer_size)
-
-        # define loss function
         self.loss_criteria=loss_criteria
-
         self.step = 0
 
     def action(self,state):
-        # compute action from policy model
         self.policy_net=self.policy_net.eval()
         action,determinant_action =self.policy_net.get_action(state)
         self.q_net=self.q_net.train()
@@ -49,7 +39,6 @@ class SAC():
         self.target_value_net=self.target_value_net.train()
         return action
     def determinant_action(self,state):
-        # compute action without stochasticity from policy model
         self.policy_net=self.policy_net.eval()
         action,determinant_action =self.policy_net.get_action(state)
         self.q_net=self.q_net.train()
@@ -73,16 +62,12 @@ class SAC():
               ):
 
 
-        # collect samples from buffer
         state, action, reward, next_state, done = self.replay_buffer.sample(batch_size)
-        
-
         state      = torch.FloatTensor(state)
         next_state = torch.FloatTensor(next_state)
         action     = torch.FloatTensor(action)
         reward     = torch.FloatTensor(reward).unsqueeze(1)
         done       = torch.FloatTensor(np.float32(done)).unsqueeze(1)
-
         expected_q = self.q_net(state, action)
         new_action, log_prob, z, mean, log_sd = self.policy_net_local.evaluate(state)
         expected_value = self.value_net(state)
@@ -91,41 +76,30 @@ class SAC():
         next_q = reward + (1 - done * gamma * target_value)
         new_expected_q = self.q_net(state, new_action)
         next_value = new_expected_q - log_prob
-
         q_loss = self.loss_criteria(expected_q, next_q.detach())
-
         v_loss = self.loss_criteria(expected_value, next_value.detach())
-        
+    
         policy_optimizer = optim.Adam(self.policy_net_local.parameters(), lr=policy_lr)
-
         policy_loss=(log_prob-new_expected_q).mean()   # PROBLEM IS WITH new_epected_q !!!!!!!!!!
         policy_optimizer.zero_grad()
         policy_loss.backward()
         policy_optimizer.step()
             
-            # additional loss functions
         mean_loss = mean_lambda * mean.pow(2).mean()
         sd_loss  = sd_lambda  * log_sd.pow(2).mean()
         z_loss    = z_lambda    * z**2
 
         v_optimizer  = optim.Adam(self.value_net.parameters(), lr=value_lr)
         q_optimizer = optim.Adam(self.q_net.parameters(), lr=q_lr)
-            
-
         q_optimizer.zero_grad()
         q_loss.backward()
         q_optimizer.step()
-
         v_optimizer.zero_grad()
         v_loss.backward()
         v_optimizer.step()
 
         for target_param, param in zip(self.target_value_net.parameters(), self.value_net.parameters()):
-            target_param.data.copy_(
-                target_param.data * (1.0 - tau) + param.data * tau
-            )
+            target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
 
         for target_param, param in zip(self.policy_net.parameters(), self.policy_net_local.parameters()):
-            target_param.data.copy_(
-                target_param.data * (1.0 - tau) + param.data * tau
-            )
+            target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
