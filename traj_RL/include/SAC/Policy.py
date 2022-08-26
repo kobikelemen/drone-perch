@@ -11,8 +11,6 @@ import numpy
 class PolicyNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_size, init_w=3e-3, log_sd_min=-20, log_sd_max=2):
         super(PolicyNetwork, self).__init__()
-        
-        print("PolicyNet")
         self.log_sd_min = log_sd_min
         self.log_sd_max = log_sd_max
         self.layer1 = nn.Linear(num_inputs, hidden_size)

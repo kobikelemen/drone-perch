@@ -7,7 +7,6 @@ import torch.nn.functional as F
 class QNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_size, init_w=3e-3):
         super(QNetwork, self).__init__()
-        print("QNet")
         self.layer1 = nn.Linear(num_inputs + num_actions, hidden_size)
         self.layer2 = nn.Linear(hidden_size, hidden_size)
         self.layer3 = nn.Linear(hidden_size, 1)

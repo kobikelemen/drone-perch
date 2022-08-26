@@ -54,18 +54,10 @@ class Sim():
 
 	def reset(self, waypoints, actual_trajectory, velocity_list, 
                 trackingError_list, reward_without_trackingError, segmentReward, polynomial):
-
-        print('in def reset')
-        print('\n------self.waypoints--------\n', waypoints)
-        print('\n---------self.actual_trajectory----------\n', actual_trajectory)
         
         y = np.linspace(waypoints[0][0], waypoints[-1][0], num=100, endpoint=True)
         poly = [[i, float(polynomial(i))] for i in y]
-        print('\n---------self.poly--------------\n', poly)
-        print('\n----------self.velocity_list---------\n', velocity_list)
-        print('\n--------self.trackingError_list------\n', trackingError_list)
-        print('\n---------self.reward_without_trackingError------\n', reward_without_trackingError)
-        print('\n--------self.segmentReward-------\n', segmentReward)
+
         self.isDone = False
         self.last_state = None
         self.last_action = None
@@ -76,7 +68,6 @@ class Sim():
         rospy.wait_for_service('/gazebo/set_model_state')
         linkState = LinkState()
         self.stopDrone()
-        print('----------position---------', self.gnc.get_current_location())
         self.gnc.set_destination(0,0,0,0)
         modelState = ModelState()
         modelState.model_name = 'drone_kinect_fixed_rope5'
@@ -95,8 +86,6 @@ class Sim():
         modelState.twist.angular.z = 0
         self.setModelState(modelState)
         rospy.sleep(10)
-        print('----------position reset------------')
-        print('---------start reached------------')
         pos = self.getLinkState('drone_kinect_fixed_rope5::cam_link', 'ground_plane')
         payload = self.getLinkState('drone_kinect_fixed_rope5::link_1', 'ground_plane')
         tetherRoll, pitch = quatToEuler(payload.link_state.pose.orientation.w, payload.link_state.pose.orientation.x,
@@ -128,7 +117,6 @@ class Sim():
         return energy_threshold
 
 	def observer(self):
-        #print('----------in def observer------------')
         payloadState = self.getLinkState('drone_kinect_fixed_rope5::link_1', 'ground_plane')
         self.all_state[6] = payloadState.link_state.twist.angular.y
         tetherQuat = payloadState.link_state.pose.orientation # roll is what is needed
@@ -148,7 +136,6 @@ class Sim():
         if self.current_state_g.system_status in range(5,9):
             self.isDone = True
             self.segmentReward[-1] += float(reward)
-            #self.reward_without_trackingError.append(reward)
             self.stopDrone()
             return reward
         if Distance <= self.all_state[-1] + 0.05:
@@ -183,7 +170,6 @@ class Sim():
 
 
     def listener(self):
-        #rospy.init_node('listener', anonymous=True)
         self.imu_sub = rospy.Subscriber('/mavros/imu/data', Imu, self.imuCallback)
         self.vel_sub = rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, self.velCallack)
         self.mavros_sub = rospy.Subscriber('/mavros/state', data_class=State, queue_size=2, callback=self.mavros_cb)

@@ -25,17 +25,14 @@ class Trajectory(Sim):
         self.action_high = np.array([pi/2, 0.873, 3, pi/2, 0.873, 3])
 
 	def waitStartPos(self, takeoffHeight):
-        print('in waitStartPos')
         location = self.gnc.get_current_location()
         z = location.z
         y = location.y
         x = location.x
         r = rospy.Rate(3)
         while (z<takeoffHeight-0.1 or z>takeoffHeight+0.1) and (x<0.5 or x>0.9) and (y<-0.2 or y>0.2):
-            #self.listener()
             r.sleep()
             location = self.gnc.get_current_location()
-            print('--------location---------', location)
             z = location.z
             y = location.y
             x = location.x
@@ -43,9 +40,7 @@ class Trajectory(Sim):
 
 
     def makeNewTrajetory(self, start_ep):
-        #print('=== in makeNewTrajetory === start_ep: ', start_ep)
         self.listener()
-        #self.start_pos = # get model state? but won't same as imu...
         location = self.gnc.get_current_location()
         if start_ep:
             self.start_pos = []
@@ -54,7 +49,6 @@ class Trajectory(Sim):
             self.y = 0
             self.z = 0
 
-        #state = np.array([location.x, location.z, self.all_state[3], sqrt(self.all_state[4]**2 + self.all_state[5]**2)]) # x, z, drone-roll, drone-speed
         self.last_state = self.all_state
         if self.mode == 'train':
             action = np.array(self.model.action(self.all_state)) 
@@ -65,11 +59,10 @@ class Trajectory(Sim):
                                     waypoint[6], waypoint[7]])
 
         elif mode == 'test':
-            action = np.array(self.model.determinant_action(self.all_state))    # NEED TO ADD DETERMINANT TRAJECTORY GENERATION
-            waypoint =self.scaleAction(action)                      # WHERE THE NEXT STATE IS ASSUMED TO BE GIVEN BY PREDICTED STATE > MAKE ALL WAYPOINTS
+            action = np.array(self.model.determinant_action(self.all_state))
+            waypoint =self.scaleAction(action)                      
             self.waypoints.append(waypoint[0:4])
             self.waypoints.append(waypoint[4:8])
-        #print('--------------wayPointList: --------------- ', self.waypoints)
         self.approximateTrajectoryFunction()
 
 
@@ -85,7 +78,6 @@ class Trajectory(Sim):
         traj = []
         for index, i in enumerate(self.waypoints):
             traj.append(i)
-            #print('-------traj-------',traj)
             if index <= len(self.waypoints)-2:
                 temp = []
                 dif = (self.waypoints[index+1][0] - i[0])/5
@@ -129,21 +121,16 @@ class Trajectory(Sim):
             instant_track_error = abs(self.z-self.polynomial(self.y))
             trackingError += instant_track_error
             self.trackingError_list.append(trackingError)
-            #print('-----self.y----', self.y)
+
             try:
-                delta_z = self.polynomial(self.y + 2*delta_y) - self.z #self.polynomial(self.y+delta_y) 
+                delta_z = self.polynomial(self.y + 2*delta_y) - self.z
             except:
-                print('---self.y + delta_y is too big or self.y is too small, calling reset---')
                 self.reset()
-            #print('---delta_y---', delta_y)
-            #print('---delta_z----', delta_z)
             unit_vec = np.array([2*delta_y/sqrt((2*delta_y)**2 + delta_z**2), delta_z/sqrt((2*delta_y)**2 + delta_z**2)])
             angle = self.all_state[3]
-            #print('----instant_track_error----', instant_track_error)
             unit_vec = np.array([cos(angle)*unit_vec[0] - sin(angle)*unit_vec[1], 
                                 sin(angle)*unit_vec[0] + cos(angle)*unit_vec[1]])
 
-            #print('---unit_vec---', unit_vec)
             speed = startVel + ((self.y - self.start_pos[0])/(end_y - self.start_pos[0]))*(endVel - startVel)
             velocity = unit_vec * speed
             self.velocity_list.append(list(velocity))
@@ -158,8 +145,6 @@ class Trajectory(Sim):
             self.z = pos.z - self.start_pos[1]
             self.actual_trajectory.append([self.y,self.z])
             self.observer()
-            print('----branch location (x,z) ----  ', self.branchState.pose.position.x, self.branchState.pose.position.z)
-            print('----self.pos-----', pos)
             if self.isDone:
                 break
         self.reward_without_trackingError.append(self.segmentReward[-1])

@@ -107,13 +107,9 @@ class gnc_api():
 
         current_pos_local = Point()
 
-        current_pos_local.x = x * cos(radians((self.local_offset_g - 90))) - y * sin(
-            radians((self.local_offset_g - 90))
-        )
+        current_pos_local.x = x * cos(radians((self.local_offset_g - 90))) - y * sin(radians((self.local_offset_g - 90)))
 
-        current_pos_local.y = x * sin(radians((self.local_offset_g - 90))) + y * cos(
-            radians((self.local_offset_g - 90))
-        )
+        current_pos_local.y = x * sin(radians((self.local_offset_g - 90))) + y * cos(radians((self.local_offset_g - 90)))
 
         current_pos_local.z = z
 
@@ -252,7 +248,6 @@ class gnc_api():
             response = self.arming_client(arm_request)
             self.local_pos_pub.publish(self.waypoint_g)
         else:
-            print('--------curent state g after arming----------', self.current_state_g)
             if response.success:
                 return 0
             else:
@@ -260,7 +255,6 @@ class gnc_api():
 
     def takeoff(self, takeoff_alt):
 
-        print('--------curent state g before arming----------', self.current_state_g)
         if not self.current_state_g.armed:
             self.arm()
         takeoff_srv = CommandTOLRequest(0, 0, 0, 0, takeoff_alt)
@@ -284,8 +278,7 @@ class gnc_api():
                 self.current_pose_g.pose.pose.orientation.z,
             )
 
-            psi = atan2((2 * (q0 * q3 + q1 * q2)),
-                        (1 - 2 * (pow(q2, 2) + pow(q3, 2))))
+            psi = atan2((2 * (q0 * q3 + q1 * q2)),(1 - 2 * (pow(q2, 2) + pow(q3, 2))))
 
             self.local_offset_g += degrees(psi)
             self.local_offset_pose_g.x += self.current_pose_g.pose.pose.position.x
@@ -302,25 +295,15 @@ class gnc_api():
 
         self.local_pos_pub.publish(self.waypoint_g)
 
-        dx = abs(
-            self.waypoint_g.pose.position.x - self.current_pose_g.pose.pose.position.x
-        )
-        dy = abs(
-            self.waypoint_g.pose.position.y - self.current_pose_g.pose.pose.position.y
-        )
-        dz = abs(
-            self.waypoint_g.pose.position.z - self.current_pose_g.pose.pose.position.z
-        )
+        dx = abs(self.waypoint_g.pose.position.x - self.current_pose_g.pose.pose.position.x)
+        dy = abs(self.waypoint_g.pose.position.y - self.current_pose_g.pose.pose.position.y)
+        dz = abs(self.waypoint_g.pose.position.z - self.current_pose_g.pose.pose.position.z)
 
         dMag = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2))
 
-        cosErr = cos(radians(self.current_heading_g)) - cos(
-            radians(self.local_desired_heading_g)
-        )
+        cosErr = cos(radians(self.current_heading_g)) - cos(radians(self.local_desired_heading_g))
 
-        sinErr = sin(radians(self.current_heading_g)) - sin(
-            radians(self.local_desired_heading_g)
-        )
+        sinErr = sin(radians(self.current_heading_g)) - sin(radians(self.local_desired_heading_g))
 
         dHead = sqrt(pow(cosErr, 2) + pow(sinErr, 2))
 

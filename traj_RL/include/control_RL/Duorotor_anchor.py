@@ -166,9 +166,6 @@ class Duorotor():
         return action
 
     def rl_action(self):
-        print(' =======')
-        print(' IN RL ACTION')
-        print(' =======')
         state = self.all_state
         self.last_state = deepcopy(state)
         action = self.model.action(state)
@@ -291,9 +288,7 @@ class Duorotor():
 
     def model_loader(self,model_path):
         path = model_path
-        print('MODEL_LOADER CALLED')
         if os.path.exists(model_path+"policy.dat") and self.load_command=="on":
-            print("PATH EXISTS")
             self.model.value_net.load_state_dict(torch.load(model_path+"value_12th_aug.dat"))
             self.model.value_net.eval()
             self.model.target_value_net.load_state_dict(torch.load(model_path+"target_12th_aug.dat"))

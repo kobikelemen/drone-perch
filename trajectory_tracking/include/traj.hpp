@@ -89,6 +89,5 @@ public:
 	float branch_pos_x;
 	float branch_pos_y;
 
-	
 
 };

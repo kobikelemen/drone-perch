@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 
+using namespace std;
+
 
 class Point
 {
@@ -124,3 +126,4 @@ Graph rrt(Node goal, int lim, Graph G, float step_size)
 		counter++;
 	}
 }
+

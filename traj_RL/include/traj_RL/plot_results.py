@@ -33,22 +33,17 @@ def show_results():
 			tracking_error = json.loads(data[index+1])
 
 		if len(waypoints) != 0  and len(actual_traj) != 0 and len(poly) != 0:
-			print('--waypoints--', waypoints)
 			
 			pl_x = []
 			pl_y = []
 			for j in waypoints:
 				pl_x += [j[0], j[3], j[6], j[9]]
 				pl_y += [j[1], j[4], j[7], j[10]]
-				#plt.scatter([i[0] for i in waypoints],[i[1] for i in waypoints], color='blue', label='waypoints')
 			plt.scatter(pl_x, pl_y, color='blue', label='waypoints')
 			plt.plot([i[0] for i in actual_traj ], [i[1] for i in actual_traj], color='red')
 			plt.scatter(x=2.762+0.089, y=4.78-3.361-drone_stationary_start, color='brown', label='branch')
 			for j in poly:
 				plt.plot([i[0] for i in j], [i[1] for i in j], color='green', label='poly')
-			
-			#plt.quiver([i[0] for i in actual_traj], [i[1] for i in actual_traj], [i[0] for i in vel_list], [i[1] for i in vel_list], scale=1, angles='xy', scale_units='xy', width=0.001)
-			#plt.plot([i[0] for i in actual_traj], [i for i in tracking_error], color='orange')
 			plt.show()
 			waypoint = []
 			poly = []
